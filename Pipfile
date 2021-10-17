@@ -1,0 +1,19 @@
+[[source]]
+url = 'https://pypi.python.org/simple'
+verify_ssl = true
+name = 'pypi'
+
+[requires]
+python_version = '3.8.12'
+
+[packages]
+requests = '*'
+google-cloud-api-gateway = '*'
+google-cloud-appengine-admin= '*'
+google-cloud-storage = '*'
+google-cloud-datastore -= '*'
+google-cloud-firestore = '*'
+google-cloud-secret-manager = '*'
+py-cord = '*'
+
+[dev-packages]

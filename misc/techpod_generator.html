@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Techmod</title>
+
+    <link rel="stylesheet" href="https://use.typekit.net/nal2djv.css">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px;
+        }
+
+        .cover-art {
+            background-color: #70007C;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.25);
+            height: 450px;
+            margin: 0 auto;
+            padding: 60px 40px 40px 40px;
+            width: 450px;
+        }
+
+        .cover-art__lede {
+            color: #FCDA00;
+            font-family: 'futura-pt';
+            font-size: 20px;
+            font-weight: 400;
+            line-height: 1.25;
+            margin: 0 0 10px 0;
+        }
+
+        .cover-art__title {
+            color: #FCDA00;
+            font-family: 'futura-pt';
+            font-size: 100px;
+            font-weight: 700;
+            line-height: 0.9;
+            margin: 0;
+            text-transform: uppercase;
+            text-shadow: 8px 8px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin: 20px auto 0 auto;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cover-art">
+        <h2 class="cover-art__lede" contenteditable spellcheck="false">Brad & Will Made a</h2>
+        <h1 class="cover-art__title" id="title-text" contenteditable spellcheck="false">
+            TECH
+            POD.
+        </h1>
+    </div>
+
+    <div class="controls">
+        <button id="smaller">Smaller Type</button>
+        <button id="bigger">Larger Type</button>
+    </div>
+
+    <script>
+        const minTitleSize = 40;
+        const maxTitleSize = 120;
+
+        let currentTitleSize = 100;
+
+        const $smaller = document.getElementById('smaller');
+        const $bigger = document.getElementById('bigger');
+        const $titleText = document.getElementById('title-text');
+
+        const setTitleSize = (size = currentTitleSize) => {
+            $titleText.style.fontSize = `${size}px`;
+        };
+
+        $smaller.addEventListener('click', (e) => {
+            currentTitleSize = Math.max(minTitleSize, currentTitleSize - 10);
+            setTitleSize();
+        });
+
+        $bigger.addEventListener('click', (e) => {
+            currentTitleSize = Math.min(maxTitleSize, currentTitleSize + 10);
+            setTitleSize();
+        });
+
+        setTitleSize();
+    </script>
+</body>
+</html>
