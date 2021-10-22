@@ -25,20 +25,36 @@ class DigestBotFirestoreClient():
             logging.error(f'Could not find firestore doc `{firestore_doc_name}` in collection {collection_ref.id}')
             raise Exception
 
+    def _refresh_configured_channels(self):
+        self.monitored_channels = self._get_doc_data(
+            collection_ref=self.admin_collection,
+            firestore_doc_name=config.monitored_channels_doc_name
+        )        
+
+    def _refresh_configured_emoji(self):
+        self.monitored_emoji = self._get_doc_data(
+            collection_ref=self.admin_collection,
+            firestore_doc_name=config.monitored_emoji_doc_name
+        )
+
     def get_digest_firestore_db(self):
         self.db = firestore.Client(project=config.gcp_project_id)
         self.admin_collection = self.db.collection(config.firestore_admin_collection)
         self.storage_collection = self.db.collection(config.firestore_storage_collection)
 
         try:
-            self.monitored_emoji = self._get_doc_data(
-                collection_ref=self.admin_collection,
-                firestore_doc_name=config.monitored_emoji_doc_name
-            )
-            self.monitored_channels = self._get_doc_data(
-                collection_ref=self.admin_collection,
-                firestore_doc_name=config.monitored_channels_doc_name
-            )
+            self._refresh_configured_emoji()
+            self._refresh_configured_channels()
         except Exception as e:
             logging.critical(f'Could not find bot config Firestore docs.')
             raise e
+
+    def set_channels_to_monitor(self, channel_list):
+        all_channels_to_monitor = list()
+        for channel in self.monitored_channels['channels']:
+            all_channels_to_monitor.append(channel)
+        for new_channel in channel_list:
+            all_channels_to_monitor.append(new_channel)
+        self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': all_channels_to_monitor}, merge=True)
+
+
