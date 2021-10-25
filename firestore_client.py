@@ -49,7 +49,7 @@ class DigestBotFirestoreClient():
             logging.critical(f'Could not find bot config Firestore docs.')
             raise e
 
-    def set_channels_to_monitor(self, channel_list):
+    def add_channels_to_monitor(self, channel_list):
         all_channels_to_monitor = list()
         for channel in self.monitored_channels['channels']:
             all_channels_to_monitor.append(channel)
@@ -57,4 +57,10 @@ class DigestBotFirestoreClient():
             all_channels_to_monitor.append(new_channel)
         self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': all_channels_to_monitor}, merge=True)
 
-
+    def remove_monitored_channels(self, channel_list):
+        all_channels_to_monitor = list()
+        for channel in self.monitored_channels['channels']:
+            all_channels_to_monitor.append(channel)
+        for channel_to_remove in channel_list:
+            all_channels_to_monitor.remove(channel_to_remove)
+        self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': all_channels_to_monitor}, merge=True)

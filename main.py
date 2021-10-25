@@ -5,11 +5,16 @@ import logging
 import firestore_client
 from datetime import datetime
 
-
 import config
 
+# TODO List:
+# - Need to add mocking and unit testing
+# - Code review from a real programmer (I have a feeling my classes are a disaster)
+# - Add emojii monitoring logic (add/remove)
+# - Add query capability & output message + formatting
+
 DB_CLIENT = firestore_client.DigestBotFirestoreClient(gcp_credentials_env_var='GOOGLE_APPLICATION_CREDENTIALS')
-BOT_ADMIN = bot_actions.DiscordClient(DB_CLIENT)
+BOT_ADMIN = bot_actions.TechPodBotClient(DB_CLIENT)
 DISCORD_CLIENT = BOT_ADMIN.DISCORD_CLIENT
 LOGGER = logging.getLogger()
 
@@ -37,7 +42,9 @@ async def on_message(message):
         
         if message.content.startswith('$add_channels'):
             await BOT_ADMIN.add_channels(message)
-            # Remove command and hashes from list of channels in command:
+
+        if message.content.startswith('$remove_channels'):
+            await BOT_ADMIN.remove_channels(message)
             
     if message.content.startswith('!test'):
         logging.info('debugging!')
