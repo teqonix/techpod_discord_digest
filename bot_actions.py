@@ -1,0 +1,108 @@
+import discord
+import logging
+import config
+
+from datetime import datetime
+
+class DiscordClient():
+    def __init__(self, DB_CLIENT) -> None:
+        super().__init__()
+        self.DB_CLIENT = DB_CLIENT
+        self.ADMIN_CHANNEL = None
+        self.CHANNEL_LIST = list()
+        self.DISCORD_CLIENT = discord.Client()
+    
+    def _get_server_channels(self):
+        all_channels_generator = self.DISCORD_CLIENT.get_all_channels()
+        raw_all_channels = list()
+        voice_channel_names = list()
+        text_channel_names = list()    
+
+        for c in all_channels_generator:
+            raw_all_channels.append(c)
+            if type(c) == discord.channel.VoiceChannel:
+                voice_channel_names.append(c.name)
+            elif type(c) == discord.channel.TextChannel:
+                text_channel_names.append(c.name)
+
+        return {
+            'raw_channels': raw_all_channels,
+            'text_channels': text_channel_names,
+            'voice_channels': voice_channel_names
+        }
+
+    async def initialize_bot(self):
+        current_channels = self._get_server_channels()
+
+        for channel in current_channels['raw_channels']:
+            if channel.name not in config.excluded_channels and channel.type.name == 'text':
+                self.CHANNEL_LIST.append(channel)
+                if channel.name == config.bot_admin_channel:
+                    self.ADMIN_CHANNEL = channel
+
+        local_server_emoji_metadata = list()
+        for emoji in self.DB_CLIENT.monitored_emoji['emoji_list']:
+            # This bot is currently hard-coded to only connect to one Discord Server, hence the [0]:
+            for server_emojii in self.DISCORD_CLIENT.guilds[0].emojis:
+                if emoji['name'] == server_emojii.name:
+                    already_added = 1
+                    local_server_emoji_metadata.append({'name': emoji['name'], 'id': str(server_emojii.id), 'category': emoji['category']})
+            # Unicode emoji will not exist in the DISCORD_CLIENT listing of emojis, so if we didn't add the emoji being processed then add it now: 
+            if already_added == 1:
+                already_added = 0
+                continue
+            else:
+                already_added = 0
+                local_server_emoji_metadata.append({'name': emoji['name'], 'id': '', 'category': emoji['category']})              
+        
+        new_line = "\n"
+        channel_string = '**Channels Being Monitored:**'
+        for channel in self.DB_CLIENT.monitored_channels['channels']:
+            channel_string = channel_string + " \n • #" + channel
+
+        emoji_string = f'{new_line}{new_line}**Emoji Being Monitored:**'
+        for emoji in local_server_emoji_metadata:
+            if emoji['id'] != '': emoji_string = emoji_string + ' \n • <:' + emoji['name'] + ':' + emoji['id'] + '> (Category: ' + emoji['category'] + ')' 
+            if emoji['id'] == '': emoji_string = emoji_string + " \n • " + emoji['name'] + ' (Category: ' + emoji['category'] + ')' 
+
+        await self.ADMIN_CHANNEL.send(f'Techpod Discord Digest bot is ready as of '\
+            f'{datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")} UTC ' \
+            f'{new_line}{new_line} {channel_string}'\
+            f'{emoji_string}'
+        )
+
+    async def add_channels(self, message):
+        cmd_channels = [i.replace('#','').strip() for i in message.content.split(' ') if i != '$add_channels']
+        current_channels = self._get_server_channels()
+        self.DB_CLIENT._refresh_configured_channels()
+        
+        # If a channel that's already being tracked was in the request, remove it:
+        new_channels_to_verify = [i for i in cmd_channels if i not in self.DB_CLIENT.monitored_channels['channels']]
+        new_channels_to_monitor = [i for i in new_channels_to_verify if i in current_channels['text_channels']]
+
+        invalid_channels = False
+        invalid_channel_list = []
+        if len(new_channels_to_verify) != len(new_channels_to_monitor):
+            invalid_channels = True
+            for channel in cmd_channels:
+                if channel not in current_channels['text_channels']:
+                    invalid_channel_list.append(channel)
+            logging.warning(f'Add channel command by user {message.author.display_name} contained channels that do not exist. Invalid channels: ```{invalid_channel_list}``` / Added to config DB: ```{new_channels_to_monitor}```')
+
+        try:
+            self.DB_CLIENT.set_channels_to_monitor(new_channels_to_monitor)
+            self.DB_CLIENT._refresh_configured_channels()
+            response_message_text = str()
+            if invalid_channels:
+                await message.channel.send(f'**Warning:** There were invalid channel entries in your request. You may want to double check and try again. \n _Invalid Channels:_ ```{invalid_channel_list}```')
+            if len(new_channels_to_monitor) != 0:
+                response_message_text = f'{message.author.display_name} added these channels to be monitored by the Discord Digest Bot: ```{new_channels_to_monitor}``` \n'
+            else:
+                response_message_text = f'**INFO:** There were no new channels to monitor in your request. \n '
+            response_message_text = response_message_text + f'**All channels currently being monitored:** ```{self.DB_CLIENT.monitored_channels["channels"]}```'
+            await message.channel.send(response_message_text)
+
+        except Exception as e:
+            logging.error(f'Could not set channels to monitor in backend. Exception: {e}')
+            await message.channel.send(f'There was a problem adding your channels to the backend DB. Error logged.')
+            await self.ADMIN_CHANNEL.send(f'There was a problem adding your channels to the backend DB: ```{e}```')
