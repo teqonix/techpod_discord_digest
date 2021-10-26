@@ -64,3 +64,19 @@ class DigestBotFirestoreClient():
         for channel_to_remove in channel_list:
             all_channels_to_monitor.remove(channel_to_remove)
         self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': all_channels_to_monitor}, merge=True)
+
+    def add_emoji_to_monitor(self, emoji_list):
+        all_emoji_to_monitor = list()
+        for emoji in self.monitored_emoji['emoji_list']:
+            all_emoji_to_monitor.append(emoji)
+        for emoji_to_add in emoji_list:
+            all_emoji_to_monitor.append(emoji_to_add)
+        self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': all_emoji_to_monitor}, merge=True)
+ 
+    def remove_emoji_to_monitor(self, emoji_list):
+        all_emoji_to_monitor = list()
+        for emoji in self.monitored_emoji['emoji_list']:
+            all_emoji_to_monitor.append(emoji)
+        for emoji_to_remove in emoji_list:
+            all_emoji_to_monitor.remove(emoji_to_remove)
+        self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': all_emoji_to_monitor}, merge=True)

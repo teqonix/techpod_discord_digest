@@ -11,7 +11,7 @@ class TechPodBotClient():
         self.ADMIN_CHANNEL = None
         self.CHANNEL_LIST = list()
         self.DISCORD_CLIENT = discord.Client()
-    
+
     def _get_server_channels(self):
         all_channels_generator = self.DISCORD_CLIENT.get_all_channels()
         raw_all_channels = list()
@@ -30,6 +30,11 @@ class TechPodBotClient():
             'text_channels': text_channel_names,
             'voice_channels': voice_channel_names
         }
+    
+    def _get_server_emoji(self):
+        logging.info('DEBUG')
+        server_custom_emoji = self.DISCORD_CLIENT.emojis
+        return
 
     def _validate_command_channels(self, message, action):
         """For add/remove channel commands this will check for invalid channels in the request."""
@@ -57,6 +62,9 @@ class TechPodBotClient():
             'invalid_channels': invalid_channel_list
         }
 
+    def _validate_command_emoji(self, message, action):
+        cmd_emoji = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_reactions','$remove_reactions']]
+        server_emoji = self._get_server_emoji()
 
     async def initialize_bot(self):
         current_channels = self._get_server_channels()
@@ -116,7 +124,7 @@ class TechPodBotClient():
         except Exception as e:
             logging.error(f'Could not set channels to monitor in backend. Exception: {e}')
             await message.channel.send(f'There was a problem adding your channels to the backend DB. Error logged.')
-            await self.ADMIN_CHANNEL.send(f'There was a problem adding your channels to the backend DB: ```{e}```')
+            await self.ADMIN_CHANNEL.send(f'There was a problem adding your channels to the backend DB: ```{e}```.  Please contact your friendly bot admin for help.')
 
     async def remove_channels(self, message):
         try:
@@ -134,3 +142,10 @@ class TechPodBotClient():
             await message.channel.send(response_message_text)
         except Exception as e:
             raise e
+    
+    async def add_emojis(self, message):
+        try:
+            emoji = self._validate_command_emoji(message=message,action='add')
+        except Exception as e:
+            logging.error(f'Exception occurred when trying to add reaction(s) to the list of monitored emoji')
+            await self.ADMIN_CHANNEL.send(f'There was a problem adding your channels to the backend DB: ```{e}```.  Please contact your friendly bot admin for help.')

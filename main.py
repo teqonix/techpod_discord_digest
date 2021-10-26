@@ -45,6 +45,9 @@ async def on_message(message):
 
         if message.content.startswith('$remove_channels'):
             await BOT_ADMIN.remove_channels(message)
+
+        if message.content.startswith('$add_reactions'):
+            await BOT_ADMIN.add_emojis(message)
             
     if message.content.startswith('!test'):
         logging.info('debugging!')
