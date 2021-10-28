@@ -1,4 +1,5 @@
 import discord
+import emoji
 import logging
 import config
 
@@ -65,6 +66,31 @@ class TechPodBotClient():
     def _validate_command_emoji(self, message, action):
         cmd_emoji = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_reactions','$remove_reactions']]
         server_emoji = self._get_server_emoji()
+        invalid_characters = list()
+        for (i,character) in enumerate(cmd_emoji):
+            try:
+                if not emoji.UNICODE_EMOJI_ALIAS_ENGLISH[character]:
+                    invalid_characters.append(character)
+            except KeyError:
+                if character.startswith('<') and character.endswith('>'):
+                    pass
+                else:
+                    invalid_characters.append(character)
+
+        for entry in invalid_characters:
+            [cmd_emoji.remove(entry) for x in cmd_emoji if x == character]    
+        
+        new_reactions = list()
+        # TODO: Check DB_CLIENT to see if the sanitized list of reactions from the command are being tracked in the backend DB:
+        # for reaction in cmd_emoji:
+        #     try:
+        #         if emoji.UNICODE_EMOJI_ALIAS_ENGLISH[reaction]:
+
+        #     except KeyError:
+        #         pass    
+
+        logging.info(f'Characters found in command after validating UNICODE EMOJI: {cmd_emoji}')
+
 
     async def initialize_bot(self):
         current_channels = self._get_server_channels()
