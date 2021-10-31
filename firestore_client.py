@@ -25,6 +25,17 @@ class DigestBotFirestoreClient():
             logging.error(f'Could not find firestore doc `{firestore_doc_name}` in collection {collection_ref.id}')
             raise Exception
 
+    def _validate_reaction_schema(self,reaction_to_validate):
+        try:
+            one = reaction_to_validate['category']
+            two = reaction_to_validate['name']
+            three = reaction_to_validate['id']
+            four = reaction_to_validate['discord_output_str']
+        except KeyError:
+            logging.error(f'Unable to validate {reaction_to_validate} as a reaction to add to the backend DB!')
+            raise Exception
+        return
+
     def _refresh_configured_channels(self):
         self.monitored_channels = self._get_doc_data(
             collection_ref=self.admin_collection,
@@ -44,7 +55,15 @@ class DigestBotFirestoreClient():
 
         try:
             self._refresh_configured_emoji()
+            # Init the emoji tracking db entry if it doesn't exist:
+            if self.monitored_emoji == {}:
+                self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': []}, merge=True)
+                self._refresh_configured_emoji()
             self._refresh_configured_channels()
+            # Init the channel tracking db entry if it doesn't exist:
+            if self.monitored_channels == {}:
+                self.admin_collection.document(config.monitored_emoji_doc_name).set({'channels': []}, merge=True)
+                self._refresh_configured_channels()
         except Exception as e:
             logging.critical(f'Could not find bot config Firestore docs.')
             raise e
@@ -70,8 +89,10 @@ class DigestBotFirestoreClient():
         for emoji in self.monitored_emoji['emoji_list']:
             all_emoji_to_monitor.append(emoji)
         for emoji_to_add in emoji_list:
+            self._validate_reaction_schema(emoji_to_add)
             all_emoji_to_monitor.append(emoji_to_add)
         self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': all_emoji_to_monitor}, merge=True)
+        self._refresh_configured_emoji()
  
     def remove_emoji_to_monitor(self, emoji_list):
         all_emoji_to_monitor = list()
@@ -80,3 +101,4 @@ class DigestBotFirestoreClient():
         for emoji_to_remove in emoji_list:
             all_emoji_to_monitor.remove(emoji_to_remove)
         self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': all_emoji_to_monitor}, merge=True)
+        self._refresh_configured_emoji()

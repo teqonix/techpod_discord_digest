@@ -106,6 +106,14 @@ class TechPodBotClient():
         [emoji_validation_results['new_emoji'].append(i) for i in cmd_emoji if i not in emoji_validation_results['tracked_emoji'] and i not in emoji_validation_results['invalid_cmd_arguments']]
         return emoji_validation_results
 
+    def determine_if_custom_emoji(self, reaction):
+        try:
+            if emoji.UNICODE_EMOJI_ALIAS_ENGLISH[reaction]:
+                return 'normal'
+        except KeyError:
+            if '<' in reaction and '>' in reaction and ':' in reaction:
+                return 'custom'
+
     async def initialize_bot(self):
         current_channels = self._get_server_channels()
 
@@ -118,6 +126,7 @@ class TechPodBotClient():
         local_server_emoji_metadata = list()
         for emoji in self.DB_CLIENT.monitored_emoji['emoji_list']:
             # This bot is currently hard-coded to only connect to one Discord Server, hence the [0]:
+            already_added = 0
             for server_emojii in self.DISCORD_CLIENT.guilds[0].emojis:
                 if emoji['name'] == server_emojii.name:
                     already_added = 1
