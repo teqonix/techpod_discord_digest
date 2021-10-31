@@ -36,10 +36,21 @@ async def on_message(message):
         return
 
     if message.author in ACTIVE_CONVERSATIONS:
-        if ACTIVE_CONVERSATIONS[message.author].command == "$add_reactions":
-            ACTIVE_CONVERSATIONS[message.author].add_reaction_handler(bot_admin=BOT_ADMIN, message=message)
-            logging.info('DEBUG HANDLE ADD REACTION')
-            pass
+        convo = ACTIVE_CONVERSATIONS[message.author]
+        if convo.command == "$add_reactions":
+            convo.add_reaction_handler(bot_admin=BOT_ADMIN, message=message)
+            if len(convo.conversation_data['emoji_validation_results']['tracked_emoji']) > 0:
+                current_emoji = [i['name'] for i in DB_CLIENT.monitored_emoji['emoji_list']]
+                await message.channel.send(f'It looks like that reaction is already being tracked along with these others: {current_emoji}')
+            elif len(convo.conversation_data['emoji_validation_results']['invalid_cmd_arguments']) > 0:
+                await message.channel.send(f'Sorry, your reaction seems to be invalid.  Try this command again.')
+            elif len(convo.conversation_data['emoji_validation_results']['new_emoji']) > 0:
+                # DB_CLIENT.add_emoji_to_monitor(convo.conversation_data['emoji_validation_results']['new_emoji'])
+                for reaction in convo.conversation_data['emoji_validation_results']['new_emoji']:
+                    await message.channel.send(f"Got it! What category do you want to assign to {reaction}?")
+            else:
+                logging.error(f'Something went wrong when trying to add reactions to what the bot monitors - no emoji were in the user`s command..')
+            del ACTIVE_CONVERSATIONS[message.author]
 
     if message.content.startswith('$'):
         # TODO? Might be good to turn this into a helper function
@@ -59,7 +70,7 @@ async def on_message(message):
                 pass
             else:
                 ACTIVE_CONVERSATIONS[message.author] = conversation.Conversation(owner=message.author, command='$add_reactions')
-                await message.channel.send(f'Hey {message.author.display_name}. What reactions would you like to start tracking?')
+                await message.channel.send(f'Hey {message.author.display_name}. What reaction would you like to start tracking?')
                 logging.info(f'Started a conversation for command for adding reactions: {ACTIVE_CONVERSATIONS[message.author]}')
             
     if message.content.startswith('!test'):

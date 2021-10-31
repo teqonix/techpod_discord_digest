@@ -1,4 +1,5 @@
 import uuid
+import logging
 from datetime import datetime
 
 class Conversation():
@@ -13,6 +14,9 @@ class Conversation():
         self.conversation_data = dict()
     
     def add_reaction_handler(self, bot_admin, message):
-        if self.conversation_stage is None:
+        if self.conversation_stage == '':
             self.conversation_data['emoji_validation_results'] = bot_admin._validate_command_emoji(message)
             self.conversation_stage = 'add_categories'
+        if self.conversation_stage == 'add_categories':
+            
+            logging.info("DEBUG ADD CATEGORIES CONVO FLOW LOGIC")

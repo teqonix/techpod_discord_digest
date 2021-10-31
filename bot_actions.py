@@ -64,8 +64,10 @@ class TechPodBotClient():
             'invalid_channels': invalid_channel_list
         }
 
-    def _validate_command_emoji(self, message):
-        cmd_emoji = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_reactions','$remove_reactions']]
+    def _validate_command_emoji(self, message, message_emoji_limit=1):
+        raw_emoji = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_reactions','$remove_reactions']]
+        cmd_emoji = [i for (n,i) in enumerate(raw_emoji) if n in range(0,message_emoji_limit)]
+        
         server_emoji = self._get_server_emoji()
         invalid_characters = list()
 
@@ -180,12 +182,3 @@ class TechPodBotClient():
             await message.channel.send(response_message_text)
         except Exception as e:
             raise e
-    
-    async def add_emojis(self, message):
-        try:
-            emoji = self._validate_command_emoji(message=message)
-            await message.channel.send(f'Validation results for your command: ```{emoji}```')
-            
-        except Exception as e:
-            logging.error(f'Exception occurred when trying to add reaction(s) to the list of monitored emoji')
-            await self.ADMIN_CHANNEL.send(f'There was a problem adding your channels to the backend DB: ```{e}```.  Please contact your friendly bot admin for help.')
