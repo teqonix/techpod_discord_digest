@@ -2,6 +2,7 @@ import discord
 import emoji
 import logging
 import config
+import json
 
 from datetime import datetime
 
@@ -63,34 +64,45 @@ class TechPodBotClient():
             'invalid_channels': invalid_channel_list
         }
 
-    def _validate_command_emoji(self, message, action):
+    def _validate_command_emoji(self, message):
         cmd_emoji = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_reactions','$remove_reactions']]
         server_emoji = self._get_server_emoji()
         invalid_characters = list()
+
+        emoji_validation_results = {
+            'tracked_emoji': list(),
+            'new_emoji': list(),
+            'invalid_cmd_arguments': list()
+        }
+
         for (i,character) in enumerate(cmd_emoji):
             try:
                 if not emoji.UNICODE_EMOJI_ALIAS_ENGLISH[character]:
-                    invalid_characters.append(character)
+                    emoji_validation_results['invalid_cmd_arguments'].append(character)
             except KeyError:
-                if character.startswith('<') and character.endswith('>'):
+                if character.startswith('<') and character.endswith('>'): # Discord parses custom emoji into machine-readable <:emoji_name:emoji_id> 
                     pass
                 else:
-                    invalid_characters.append(character)
+                    emoji_validation_results['invalid_cmd_arguments'].append(character)
 
-        for entry in invalid_characters:
+        for entry in emoji_validation_results['invalid_cmd_arguments']:
             [cmd_emoji.remove(entry) for x in cmd_emoji if x == character]    
         
-        new_reactions = list()
         # TODO: Check DB_CLIENT to see if the sanitized list of reactions from the command are being tracked in the backend DB:
-        # for reaction in cmd_emoji:
-        #     try:
-        #         if emoji.UNICODE_EMOJI_ALIAS_ENGLISH[reaction]:
-
-        #     except KeyError:
-        #         pass    
-
-        logging.info(f'Characters found in command after validating UNICODE EMOJI: {cmd_emoji}')
-
+        for reaction in cmd_emoji:
+            try:
+                if emoji.UNICODE_EMOJI_ALIAS_ENGLISH[reaction]:
+                    for tracked_emoji in self.DB_CLIENT.monitored_emoji['emoji_list']:
+                        if reaction == tracked_emoji['name']:
+                            emoji_validation_results['tracked_emoji'].append(tracked_emoji)
+            except KeyError:
+                for tracked_emoji in self.DB_CLIENT.monitored_emoji['emoji_list']:
+                    custom_reaction = reaction.strip('<').strip('>').split(':')
+                    if custom_reaction[1] == tracked_emoji['name']:
+                        emoji_validation_results['tracked_emoji'].append(tracked_emoji)
+        
+        [emoji_validation_results['new_emoji'].append(i) for i in cmd_emoji if i not in emoji_validation_results['tracked_emoji'] and i not in emoji_validation_results['invalid_cmd_arguments']]
+        return emoji_validation_results
 
     async def initialize_bot(self):
         current_channels = self._get_server_channels()
@@ -171,7 +183,9 @@ class TechPodBotClient():
     
     async def add_emojis(self, message):
         try:
-            emoji = self._validate_command_emoji(message=message,action='add')
+            emoji = self._validate_command_emoji(message=message)
+            await message.channel.send(f'Validation results for your command: ```{emoji}```')
+            
         except Exception as e:
             logging.error(f'Exception occurred when trying to add reaction(s) to the list of monitored emoji')
             await self.ADMIN_CHANNEL.send(f'There was a problem adding your channels to the backend DB: ```{e}```.  Please contact your friendly bot admin for help.')
