@@ -96,9 +96,14 @@ class DigestBotFirestoreClient():
  
     def remove_emoji_to_monitor(self, emoji_list):
         all_emoji_to_monitor = list()
+        emoji_to_remove = list()
         for emoji in self.monitored_emoji['emoji_list']:
             all_emoji_to_monitor.append(emoji)
-        for emoji_to_remove in emoji_list:
-            all_emoji_to_monitor.remove(emoji_to_remove)
+        for emoji in emoji_list:
+            for (i,current_emoji) in enumerate(all_emoji_to_monitor):
+                if emoji == current_emoji:
+                    emoji_to_remove.append(emoji)
+                    all_emoji_to_monitor.pop(i)
+
         self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': all_emoji_to_monitor}, merge=True)
         self._refresh_configured_emoji()

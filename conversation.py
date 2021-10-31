@@ -2,6 +2,7 @@ import uuid
 import logging
 from datetime import datetime
 
+
 class Conversation():
     def __init__(self, owner, command, db_client, bot_admin) -> None:
         super().__init__()
@@ -59,6 +60,21 @@ class Conversation():
 
             conversation_complete_text = f'Awesome.  Added the following reactions and categories to monitor: \n'
             for reaction in reactions_to_add_to_db:
-                conversation_complete_text = conversation_complete_text + f"* Reaction: {reaction['name']} Category: {reaction['category']}"
+                conversation_complete_text = conversation_complete_text + f"* Reaction: {reaction['discord_output_str']} Category: {reaction['category']}"
+            conversation_complete_text = conversation_complete_text + f'\n Current reactions being monitored: {[i["discord_output_str"] for i in self.DB_CLIENT.monitored_emoji["emoji_list"]]}'
             await message.channel.send(conversation_complete_text)
-            logging.info("DEBUG ADD CATEGORIES CONVO FLOW LOGIC")
+
+    async def remove_reaction_handler(self, message):
+        if self.conversation_stage == '':
+            self.conversation_data['reactions'] = list()
+            self.conversation_stage = 'remove_emoji'
+        
+        if self.conversation_stage == 'remove_emoji':
+            self.conversation_data['emoji_validation_results'] = self.BOT_ADMIN._validate_command_emoji(message)
+            if len(self.conversation_data['emoji_validation_results']['tracked_emoji']) > 0:
+                current_emoji = self.conversation_data['emoji_validation_results']['tracked_emoji']
+                self.DB_CLIENT.remove_emoji_to_monitor(emoji_list=current_emoji)
+                await message.channel.send(f'You got it.  Reactions still being tracked: {[i["discord_output_str"] for i in self.DB_CLIENT.monitored_emoji["emoji_list"]]}')
+                self.conversation_stage='complete'
+            else:
+                await message.channel.send(f'Hmm. Your command did not include an emoji already being monitored on this server (which are { [i["discord_output_str"] for i in self.DB_CLIENT.monitored_emoji["emoji_list"]] }). Try re-submitting an emoji to remove (or cancel with a `$cancel` command.)')

@@ -37,10 +37,21 @@ async def on_message(message):
 
     if message.author in ACTIVE_CONVERSATIONS:
         convo = ACTIVE_CONVERSATIONS[message.author]
+        # If the user has requested to cancel their operation, delete the conversation:
+        if message.content.startswith('$cancel'):
+            if convo.conversation_stage == 'add_categories':
+                await message.channel.send(f'You are in the middle of adding a reaction so we cannot cancel right now!')
+                return
+            else:
+                await message.channel.send(f'Cancelling your request to {ACTIVE_CONVERSATIONS[message.author].command}.')
+                ACTIVE_CONVERSATIONS[message.author].conversation_stage = 'complete'
+                
         if convo.conversation_stage == 'complete':
             del ACTIVE_CONVERSATIONS[message.author]
         elif convo.command == "$add_reactions":
             await convo.add_reaction_handler(message=message)
+        elif convo.command == "$remove_reactions":
+            await convo.remove_reaction_handler(message=message)
 
     if message.content.startswith('$'):
         # TODO? Might be good to turn this into a helper function
@@ -63,6 +74,14 @@ async def on_message(message):
                 await message.channel.send(f'Hey {message.author.display_name}. What reaction would you like to start tracking?')
                 logging.info(f'Started a conversation for command for adding reactions: {ACTIVE_CONVERSATIONS[message.author]}')
             
+        if message.content.startswith('$remove_reactions'):
+            if message.author in ACTIVE_CONVERSATIONS:
+                pass
+            else:
+                ACTIVE_CONVERSATIONS[message.author] = conversation.Conversation(owner=message.author, command='$remove_reactions', db_client=DB_CLIENT, bot_admin=BOT_ADMIN)
+                await message.channel.send(f'Hey {message.author.display_name}. What reactions would you like to stop tracking? Pick from these: { [i["discord_output_str"] for i in DB_CLIENT.monitored_emoji["emoji_list"]] }')
+                logging.info(f'Started a conversation for command for removing reactions: {ACTIVE_CONVERSATIONS[message.author]}')
+
     if message.content.startswith('!test'):
         logging.info('debugging!')
         logging.info('no really I would like to debug')
