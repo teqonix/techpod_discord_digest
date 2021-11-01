@@ -37,6 +37,7 @@ async def on_message(message):
 
     if message.author in ACTIVE_CONVERSATIONS:
         convo = ACTIVE_CONVERSATIONS[message.author]
+        convo.conversation_message_list.append(message)
         # If the user has requested to cancel their operation, delete the conversation:
         if message.content.startswith('$cancel'):
             if convo.conversation_stage == 'add_categories':
@@ -54,6 +55,8 @@ async def on_message(message):
             await convo.remove_reaction_handler(message=message)
         elif convo.command == "$add_channels":
             await convo.add_channel_handler(message=message)
+        elif convo.command == "$remove_channels":
+            await convo.remove_channel_handler(message=message)
 
     if message.content.startswith('$'):
         # TODO? Might be good to turn this into a helper function
@@ -71,7 +74,12 @@ async def on_message(message):
                 logging.info(f'Started a conversation for command for adding channels: {ACTIVE_CONVERSATIONS[message.author]}')
 
         if message.content.startswith('$remove_channels'):
-            await BOT_ADMIN.remove_channels(message)
+            if message.author in ACTIVE_CONVERSATIONS:
+                pass
+            else:
+                ACTIVE_CONVERSATIONS[message.author] = conversation.Conversation(owner=message.author, command='$remove_channels', db_client=DB_CLIENT, bot_admin=BOT_ADMIN)
+                await message.channel.send(f'Hey {message.author.display_name}. What channels would you like to me to stop monitoring?')
+                logging.info(f'Started a conversation for command for removing channels: {ACTIVE_CONVERSATIONS[message.author]}')
 
         if message.content.startswith('$add_reactions'):
             if message.author in ACTIVE_CONVERSATIONS:

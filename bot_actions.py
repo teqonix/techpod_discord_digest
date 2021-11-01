@@ -71,7 +71,7 @@ class TechPodBotClient():
             valid_cmd_channels = [i for i in verified_cmd_channels if i in self.DB_CLIENT.monitored_channels['channels']]
 
         return {
-            'new_channels': valid_cmd_channels,
+            'valid_cmd_channels': valid_cmd_channels,
             'valid_channels': self.DB_CLIENT.monitored_channels['channels'],
             'invalid_channels': invalid_channel_list
         }
@@ -117,6 +117,8 @@ class TechPodBotClient():
         
         [emoji_validation_results['new_emoji'].append(i) for i in cmd_emoji if i not in emoji_validation_results['tracked_emoji'] and i not in emoji_validation_results['invalid_cmd_arguments']]
         return emoji_validation_results
+
+    # def _get_bot_status_text(self):
 
     def determine_if_custom_emoji(self, reaction):
         try:
