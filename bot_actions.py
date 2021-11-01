@@ -118,25 +118,7 @@ class TechPodBotClient():
         [emoji_validation_results['new_emoji'].append(i) for i in cmd_emoji if i not in emoji_validation_results['tracked_emoji'] and i not in emoji_validation_results['invalid_cmd_arguments']]
         return emoji_validation_results
 
-    # def _get_bot_status_text(self):
-
-    def determine_if_custom_emoji(self, reaction):
-        try:
-            if emoji.UNICODE_EMOJI_ALIAS_ENGLISH[reaction]:
-                return 'normal'
-        except KeyError:
-            if '<' in reaction and '>' in reaction and ':' in reaction:
-                return 'custom'
-
-    async def initialize_bot(self):
-        current_channels = self._get_server_channels()
-
-        for channel in current_channels['raw_channels']:
-            if channel.name not in config.excluded_channels and channel.type.name == 'text':
-                self.CHANNEL_LIST.append(channel)
-                if channel.name == config.bot_admin_channel:
-                    self.ADMIN_CHANNEL = channel
-
+    def _get_bot_status_text(self):
         local_server_emoji_metadata = list()
         for emoji in self.DB_CLIENT.monitored_emoji['emoji_list']:
             # This bot is currently hard-coded to only connect to one Discord Server, hence the [0]:
@@ -162,11 +144,35 @@ class TechPodBotClient():
         for emoji in local_server_emoji_metadata:
             if emoji['id'] != '': emoji_string = emoji_string + ' \n • <:' + emoji['name'] + ':' + emoji['id'] + '> (Category: ' + emoji['category'] + ')' 
             if emoji['id'] == '': emoji_string = emoji_string + " \n • " + emoji['name'] + ' (Category: ' + emoji['category'] + ')' 
+        return {
+            'emoji_status': emoji_string,
+            'channel_status': channel_string
+        }
+
+    def determine_if_custom_emoji(self, reaction):
+        try:
+            if emoji.UNICODE_EMOJI_ALIAS_ENGLISH[reaction]:
+                return 'normal'
+        except KeyError:
+            if '<' in reaction and '>' in reaction and ':' in reaction:
+                return 'custom'
+
+    async def initialize_bot(self):
+        current_channels = self._get_server_channels()
+
+        for channel in current_channels['raw_channels']:
+            if channel.name not in config.excluded_channels and channel.type.name == 'text':
+                self.CHANNEL_LIST.append(channel)
+                if channel.name == config.bot_admin_channel:
+                    self.ADMIN_CHANNEL = channel
+
+        new_line = '\n'
+        current_status = self._get_bot_status_text()
 
         await self.ADMIN_CHANNEL.send(f'Techpod Discord Digest bot is ready as of '\
             f'{datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")} UTC ' \
-            f'{new_line}{new_line} {channel_string}'\
-            f'{emoji_string}'
+            f'{new_line}{new_line} {current_status["channel_status"]}'\
+            f'{current_status["emoji_status"]}'
         )
 
     async def add_channels(self, message):

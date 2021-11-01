@@ -65,6 +65,14 @@ async def on_message(message):
             if admin_role not in [i.name for i in message.author.roles]:
                 return       
 
+        if message.content.startswith('$status'):
+            current_status = BOT_ADMIN._get_bot_status_text()
+            new_line = '\n'
+            await message.channel.send(f'Hey {message.author.display_name}, the current Discord Digest Bot status is: {new_line}'\
+                f'{new_line}{current_status["channel_status"]}'\
+                f'{current_status["emoji_status"]}'
+            )
+
         if message.content.startswith('$add_channels'):
             if message.author in ACTIVE_CONVERSATIONS:
                 pass
