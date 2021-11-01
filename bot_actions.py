@@ -40,27 +40,39 @@ class TechPodBotClient():
 
     def _validate_command_channels(self, message, action):
         """For add/remove channel commands this will check for invalid channels in the request."""
-        cmd_channels = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_channels','$remove_channels']]
+        cmd_channels = [i.replace('#','').strip() for i in message.content.split(' ') if i not in ['$add_channels','$remove_channels',""]]
         current_channels = self._get_server_channels()
         self.DB_CLIENT._refresh_configured_channels()
         
-        verified_cmd_channels = [i for i in cmd_channels if i in current_channels['text_channels']]
+        cmd_channels_to_remove = list()
+        for (i,channel) in enumerate(cmd_channels):
+            if channel.find('<') > -1 or channel.find('>') > -1:
+                for server_channel in current_channels['raw_channels']:
+                    if str(server_channel.id) == channel.strip('<>'):
+                        cmd_channels_to_remove.append(i)
+                        cmd_channels.append(server_channel.name)
+
+        verified_cmd_channels = [i for (n,i) in enumerate(cmd_channels) if i in current_channels['text_channels'] and n not in cmd_channels_to_remove]
+
         invalid_channel_list = []
         if len(verified_cmd_channels) != len(cmd_channels):
             for channel in cmd_channels:
+                if channel.find('<') > -1 and channel.find('>') > -1:
+                    continue
                 if channel not in current_channels['text_channels']:
                     invalid_channel_list.append(channel)
             logging.warning(f'Channel command by user {message.author.display_name} contained channels that do not exist. Invalid channels: ```{invalid_channel_list}``` / Valid channels: ```{verified_cmd_channels}```')
         
         if action == "add":
         # If a channel that's already being tracked was in the request, remove it:
-            valid_cmd_channels = [i for i in cmd_channels if i not in self.DB_CLIENT.monitored_channels['channels']]
+            valid_cmd_channels = [i for i in verified_cmd_channels if i not in self.DB_CLIENT.monitored_channels['channels']]
 
         if action == 'remove':
-            valid_cmd_channels = [i for i in cmd_channels if i in self.DB_CLIENT.monitored_channels['channels']]
+            valid_cmd_channels = [i for i in verified_cmd_channels if i in self.DB_CLIENT.monitored_channels['channels']]
 
         return {
-            'valid_channels': valid_cmd_channels,
+            'new_channels': valid_cmd_channels,
+            'valid_channels': self.DB_CLIENT.monitored_channels['channels'],
             'invalid_channels': invalid_channel_list
         }
 

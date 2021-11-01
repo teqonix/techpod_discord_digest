@@ -78,3 +78,25 @@ class Conversation():
                 self.conversation_stage='complete'
             else:
                 await message.channel.send(f'Hmm. Your command did not include an emoji already being monitored on this server (which are { [i["discord_output_str"] for i in self.DB_CLIENT.monitored_emoji["emoji_list"]] }). Try re-submitting an emoji to remove (or cancel with a `$cancel` command.)')
+
+    async def add_channel_handler(self, message):
+        if self.conversation_stage == '':
+            self.conversation_data['channels'] = list()
+            self.conversation_stage = 'add_channels'
+        
+        if self.conversation_stage == 'add_channels':
+            self.conversation_data['channel_validation_results'] = self.BOT_ADMIN._validate_command_channels(message,action='add')
+            if len(self.conversation_data['channel_validation_results']['new_channels']) > 0:
+                self.DB_CLIENT.add_channels_to_monitor(channel_list=self.conversation_data['channel_validation_results']['new_channels'])
+                await message.channel.send(f'Done. These channels are now being monitored: {self.DB_CLIENT.monitored_channels["channels"]}')
+                self.conversation_stage = 'complete'
+                return
+            elif len(self.conversation_data['channel_validation_results']['invalid_channels']) > 0:
+                await message.channel.send(f'Sorry, there are channel(s) that seem to be invalid in your command: {self.conversation_data["channel_validation_results"]["invalid_channels"]}.  Try this command again.')
+                logging.error(f'User attempted to add an invalid channel - conversation will terminate.')
+                self.conversation_stage = 'complete'
+            elif len(self.conversation_data['channel_validation_results']['new_channels']) == 0:
+                await message.channel.send(f'Hmm. There were no new channels to monitor in your request. These channels are now being monitored: {self.DB_CLIENT.monitored_channels["channels"]}')
+                self.conversation_stage = 'complete'
+            else:
+                logging.error(f'Something went wrong when trying to add channels to what the bot monitors.. message that caused the issue: {message}')

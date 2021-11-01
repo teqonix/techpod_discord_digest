@@ -52,6 +52,8 @@ async def on_message(message):
             await convo.add_reaction_handler(message=message)
         elif convo.command == "$remove_reactions":
             await convo.remove_reaction_handler(message=message)
+        elif convo.command == "$add_channels":
+            await convo.add_channel_handler(message=message)
 
     if message.content.startswith('$'):
         # TODO? Might be good to turn this into a helper function
@@ -61,7 +63,12 @@ async def on_message(message):
                 return       
 
         if message.content.startswith('$add_channels'):
-            await BOT_ADMIN.add_channels(message)
+            if message.author in ACTIVE_CONVERSATIONS:
+                pass
+            else:
+                ACTIVE_CONVERSATIONS[message.author] = conversation.Conversation(owner=message.author, command='$add_channels', db_client=DB_CLIENT, bot_admin=BOT_ADMIN)
+                await message.channel.send(f'Hey {message.author.display_name}. What channels would you like to start monitoring?')
+                logging.info(f'Started a conversation for command for adding channels: {ACTIVE_CONVERSATIONS[message.author]}')
 
         if message.content.startswith('$remove_channels'):
             await BOT_ADMIN.remove_channels(message)

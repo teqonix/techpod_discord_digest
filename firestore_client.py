@@ -62,7 +62,7 @@ class DigestBotFirestoreClient():
             self._refresh_configured_channels()
             # Init the channel tracking db entry if it doesn't exist:
             if self.monitored_channels == {}:
-                self.admin_collection.document(config.monitored_emoji_doc_name).set({'channels': []}, merge=True)
+                self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': []}, merge=True)
                 self._refresh_configured_channels()
         except Exception as e:
             logging.critical(f'Could not find bot config Firestore docs.')
@@ -75,6 +75,7 @@ class DigestBotFirestoreClient():
         for new_channel in channel_list:
             all_channels_to_monitor.append(new_channel)
         self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': all_channels_to_monitor}, merge=True)
+        self._refresh_configured_channels()
 
     def remove_monitored_channels(self, channel_list):
         all_channels_to_monitor = list()
@@ -83,6 +84,7 @@ class DigestBotFirestoreClient():
         for channel_to_remove in channel_list:
             all_channels_to_monitor.remove(channel_to_remove)
         self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': all_channels_to_monitor}, merge=True)
+        self._refresh_configured_channels()
 
     def add_emoji_to_monitor(self, emoji_list):
         all_emoji_to_monitor = list()
@@ -101,7 +103,7 @@ class DigestBotFirestoreClient():
             all_emoji_to_monitor.append(emoji)
         for emoji in emoji_list:
             for (i,current_emoji) in enumerate(all_emoji_to_monitor):
-                if emoji == current_emoji:
+                if emoji == current_emoji['discord_output_str']:
                     emoji_to_remove.append(emoji)
                     all_emoji_to_monitor.pop(i)
 
