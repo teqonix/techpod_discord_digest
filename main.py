@@ -10,9 +10,10 @@ import conversation
 
 # TODO List:
 # - Need to add mocking and unit testing
-# - Code review from a real programmer (I have a feeling my classes are a disaster)
+# - Code review from a real programmer (I am not an Object Oriented developer - this code will make someone barf)
 # - Add emojii monitoring logic (add/remove)
 # - Add query capability & output message + formatting
+# - Add versioning to all data schemas - if this changes over time it would be good to keep for conversion purposes
 
 DB_CLIENT = firestore_client.DigestBotFirestoreClient(gcp_credentials_env_var='GOOGLE_APPLICATION_CREDENTIALS')
 BOT_ADMIN = bot_actions.TechPodBotClient(DB_CLIENT)
@@ -34,6 +35,11 @@ async def on_message(message):
     # Ignore messages in channels not being monitored
     if message.channel.id not in [i.id for i in BOT_ADMIN.CHANNEL_LIST]:
         return
+
+    for opt_out_role in config.tracking_opt_out_roles:
+        # Ignore messages from users that have opted out:
+        if opt_out_role in [i.name for i in message.author.roles]:
+            return     
 
     if message.author in ACTIVE_CONVERSATIONS:
         convo = ACTIVE_CONVERSATIONS[message.author]

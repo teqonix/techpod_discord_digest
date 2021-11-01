@@ -11,6 +11,10 @@ excluded_channels = [
 bot_admin_role_names = [
     'Bot Admin'
 ]
+# Some people may want to opt out of having their reactions tracked:
+tracking_opt_out_roles = [
+    'Bot Invisibility'
+]
 
 # GCP Config:
 gcp_project_id = 'techpod-discord-digest'
