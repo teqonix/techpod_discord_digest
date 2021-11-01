@@ -103,7 +103,7 @@ class DigestBotFirestoreClient():
             all_emoji_to_monitor.append(emoji)
         for emoji in emoji_list:
             for (i,current_emoji) in enumerate(all_emoji_to_monitor):
-                if emoji == current_emoji['discord_output_str']:
+                if emoji['discord_output_str'] == current_emoji['discord_output_str']:
                     emoji_to_remove.append(emoji)
                     all_emoji_to_monitor.pop(i)
 
