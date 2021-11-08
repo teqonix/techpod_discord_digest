@@ -12,7 +12,10 @@ class TechPodBotClient():
         self.DB_CLIENT = DB_CLIENT
         self.ADMIN_CHANNEL = None
         self.CHANNEL_LIST = list()
-        self.DISCORD_CLIENT = discord.Client()
+
+        enabled_intents = discord.Intents.default()
+        enabled_intents.members = True
+        self.DISCORD_CLIENT = discord.Client(intents=enabled_intents)
 
     def _get_server_channels(self):
         all_channels_generator = self.DISCORD_CLIENT.get_all_channels()
@@ -148,6 +151,14 @@ class TechPodBotClient():
             'emoji_status': emoji_string,
             'channel_status': channel_string
         }
+
+    def get_channel_reference(self,channel_id):
+        found_channel = [i for i in self.CHANNEL_LIST if i.id == channel_id]
+        if len(found_channel) == 0:
+            logging.warning(f'Could not find channel with ID {channel_id} in the list of channels tracked by DISCORD_CLIENT.  Known channels: {self.CHANNEL_LIST}')
+            return 'NOT_FOUND'
+        else:
+            return found_channel[0]
 
     def determine_if_custom_emoji(self, reaction):
         try:

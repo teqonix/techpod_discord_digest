@@ -1,4 +1,7 @@
 from google.cloud import firestore
+from discord import message
+from discord import emoji
+from discord import PartialEmoji
 import os
 import logging
 import config
@@ -47,6 +50,36 @@ class DigestBotFirestoreClient():
             collection_ref=self.admin_collection,
             firestore_doc_name=config.monitored_emoji_doc_name
         )
+
+    # The discord library returns a custom Class if a custom emoji is used.  If not, it just returns a string.
+    def _handle_custom_emoji(self, emoji_to_parse):
+        return_dict = dict()
+        if type(emoji_to_parse) == emoji.Emoji: 
+            return_dict = {
+                'custom_emoji': True,
+                'emoji_id': str(emoji_to_parse.id),
+                'emoji_name': emoji_to_parse.name,
+                'emoji_bot_text': str(emoji_to_parse),
+                'external_server_emoji': False
+            }
+            return return_dict
+        elif type(emoji_to_parse) == PartialEmoji and emoji_to_parse.id is not None:
+            return_dict = {
+                'custom_emoji': True,
+                'emoji_id': str(emoji_to_parse.id),
+                'emoji_name': emoji_to_parse.name,
+                'emoji_bot_text': str(emoji_to_parse),
+                'external_server_emoji': True
+            }
+            return return_dict            
+        elif type(emoji_to_parse) == str:
+            return_dict = {
+                'emoji_name': emoji_to_parse
+            }
+            return return_dict
+        else:
+            logging.error(f'Attempted to handle an emoji for storing in the backend with an unknown type.  Type was: {type(emoji_to_parse)} with value {str(emoji_to_parse)}')
+            raise Exception
 
     def get_digest_firestore_db(self):
         self.db = firestore.Client(project=config.gcp_project_id)
@@ -109,3 +142,30 @@ class DigestBotFirestoreClient():
 
         self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': all_emoji_to_monitor}, merge=True)
         self._refresh_configured_emoji()
+    
+    def store_raw_message(self, fetched_message):
+        if type(fetched_message) != message.Message:
+            logging.exception(f'The message you submitted to be stored in the backend DB needs to be a discord.message.Message class. Yours was a {type(fetched_message)}.') 
+            raise Exception
+        else:
+            db_document_id = str(fetched_message.guild.id) + '.' + str(fetched_message.channel.id) + '.' + str(fetched_message.id)
+            
+            message_data = {
+                'clean_content': fetched_message.clean_content,
+                'content': fetched_message.content,
+                'created_at': fetched_message.created_at.isoformat(),
+                'message_id': str(fetched_message.id),
+                'channel_id': str(fetched_message.channel.id),
+                'channel_name': fetched_message.channel.name,
+                'channel_guild_id': str(fetched_message.channel.guild.id),
+                'reactions': [{'count': i.count, 'emoji': self._handle_custom_emoji(emoji_to_parse=i.emoji)} for i in fetched_message.reactions
+                ],
+                'message_url': fetched_message.jump_url,
+                'author': {
+                    'author_id': str(fetched_message.author.id),
+                    'display_name': fetched_message.author.display_name,
+                    'name': fetched_message.author.name
+                }
+            }
+            message_collection = self.db.collection(f'{config.firestore_storage_collection}/{config.message_store_doc_name}/{config.message_store_reaction_collection_name}')
+            message_collection.document(db_document_id).set(message_data, merge=True)

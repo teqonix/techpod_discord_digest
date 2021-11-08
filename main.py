@@ -28,7 +28,7 @@ async def on_ready():
     print('Bot Ready.')
 
 @DISCORD_CLIENT.event
-async def on_message(message):    
+async def on_message(message):
     if message.author == DISCORD_CLIENT.user:
         return
 
@@ -119,7 +119,21 @@ async def on_message(message):
 async def on_raw_reaction_add(payload):
     logging.debug(f"saw a reaction added: {payload}")
     if payload.channel_id in [c.id for c in BOT_ADMIN.CHANNEL_LIST]:
-        logging.info(f"Reaction {payload.emoji.name} was used on message {payload.message_id} in channel {payload.channel_id} by member {payload.member.name}.")
+        if str(payload.emoji) in [i['discord_output_str'] for i in DB_CLIENT.monitored_emoji['emoji_list']]:
+            logging.info(f"Reaction {payload.emoji.name} was used on message {payload.message_id} in channel {payload.channel_id} by member {payload.member.name}.")
+            try:
+                channel_ref = BOT_ADMIN.get_channel_reference(channel_id=payload.channel_id)
+                message_ref = await channel_ref.fetch_message(id=payload.message_id)
+                # member_reg = channel_ref.guild.
+                # If a user has opted out of tracking, do not continue processing their reaction:
+                # TODO: Probably turn this into a helper function somewhere else
+                for opt_out_role in config.tracking_opt_out_roles:
+                    if opt_out_role in [i.name for i in message_ref.author.roles]:
+                        return
+            except Exception as e:
+                logging.error(f'Could not fetch channel reference with id {payload.channel_id} or message reference with id {payload.message_id}')
+                raise Exception
+            DB_CLIENT.store_raw_message(message_ref)
 
 if __name__ == "__main__":
     logging.basicConfig(level=config.log_level)

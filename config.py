@@ -25,3 +25,5 @@ monitored_emoji_doc_name = 'MONITORED_EMOJI'
 monitored_channels_doc_name = 'MONITORED_CHANNELS'
 
 firestore_storage_collection = 'techpod_discord_digest_bot_storage' # TODO: Add to terraform
+message_store_doc_name = 'messages'
+message_store_reaction_collection_name = 'reacted_to'
