@@ -1,6 +1,8 @@
 import discord
 import emoji
 import logging
+
+from google.cloud.firestore_v1.types import query
 import config
 import json
 
@@ -152,6 +154,17 @@ class TechPodBotClient():
             'channel_status': channel_string
         }
 
+    def _get_emoji_category(self, discord_emoji_text):
+        for emoji in self.DB_CLIENT.monitored_emoji['emoji_list']:
+            if emoji['discord_output_str'] == discord_emoji_text:
+                return {
+                    'category': emoji['category'],
+                    'discord_output_str': emoji['discord_output_str']
+                }
+            else:
+                continue
+        return 'UNKNOWN'
+
     def get_channel_reference(self,channel_id):
         found_channel = [i for i in self.CHANNEL_LIST if i.id == channel_id]
         if len(found_channel) == 0:
@@ -222,3 +235,42 @@ class TechPodBotClient():
             await message.channel.send(response_message_text)
         except Exception as e:
             raise e
+
+    async def run_digest_query(self, message):
+        # TODO:
+        # - Add parsing for begin / end dates
+        # - Split messages apart if too big to stuff into a single message
+        # - Create a fancy HTML page and store / serve it in a GCS bucket as the report output?
+        # - 
+        digest_messages = self.DB_CLIENT.get_reacted_messages_for_timespan()
+        messages_by_category = dict()
+        msg_categories = list() 
+        await message.channel.send(f'**Community Activity Digest for the past {config.default_query_days} days:** \n --------------------------------------------------')
+        for msg in digest_messages:
+            [msg_categories.append(self._get_emoji_category(i['emoji']['emoji_bot_text'])) for i in msg['reactions']]
+            for category in msg_categories:
+                try: 
+                    for reaction in msg['reactions']:
+                        if reaction['emoji']['emoji_bot_text'] == category['discord_output_str']:
+                            messages_by_category[(category['category'])].append(msg)
+                        else:
+                            continue
+                except KeyError:
+                    messages_by_category[(category['category'])] = list()
+                    messages_by_category[(category['category'])].append(msg)
+        del msg
+
+        for category in messages_by_category:
+            category_emoji = [i for i in msg_categories if i['category'] == category]
+            category_text = f'\n\n **--{category_emoji[0]["discord_output_str"]}-- {category} --{category_emoji[0]["discord_output_str"]}--** \n'
+            # category_messages = list()
+            for msg in messages_by_category[category]:
+                category_text = category_text + f'*At {msg["created_at_str"].split(".")[0]} UTC, {msg["author"]["display_name"]} wrote:*```{msg["clean_content"]}``` Context: {msg["message_url"]} \n\n'
+            if len(category_text) >= 1900:
+                logging.warning(f'Query response message was truncated before being sent to Discord. Full message: {category_text}')
+                category_text = category_text[0:1900]
+                category_text = category_text + '\n\n **Sorry, this message was too big for Discord! Category report truncated.**'
+            await message.channel.send(category_text)
+            del msg
+            del category_text
+        return

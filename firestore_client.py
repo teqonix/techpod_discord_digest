@@ -96,7 +96,8 @@ class DigestBotFirestoreClient():
             return return_dict            
         elif type(emoji_to_parse) == str:
             return_dict = {
-                'emoji_name': emoji_to_parse
+                'emoji_name': emoji_to_parse,
+                'emoji_bot_text': str(emoji_to_parse)
             }
             return return_dict
         else:
@@ -182,7 +183,11 @@ class DigestBotFirestoreClient():
                 'channel_id': str(fetched_message.channel.id),
                 'channel_name': fetched_message.channel.name,
                 'channel_guild_id': str(fetched_message.channel.guild.id),
-                'reactions': [{'count': i.count, 'emoji': self._handle_custom_emoji(emoji_to_parse=i.emoji)} for i in fetched_message.reactions
+                'reactions': [
+                    {
+                        'count': i.count,
+                        'emoji': self._handle_custom_emoji(emoji_to_parse=i.emoji)
+                     } for i in fetched_message.reactions
                 ],
                 'message_url': fetched_message.jump_url,
                 'author': {
@@ -193,10 +198,9 @@ class DigestBotFirestoreClient():
             }
             self.message_collection.document(db_document_id).set(message_data, merge=True)
         
-    def get_reacted_messages_for_timespan(self, query_begin=(datetime.today() - timedelta(days=config.default_query_days)), query_end=datetime.today()):
+    def get_reacted_messages_for_timespan(self, query_begin=(datetime.today() - timedelta(days=config.default_query_days)), query_end=(datetime.today() + timedelta(days=1))):
         filtered_messages_query = self.message_collection.where(config.message_created_at_field, u'>=', query_begin).where(config.message_created_at_field, u'<=', query_end)
         filtered_messages_generator = filtered_messages_query.stream()
-        filtered_messages = [i for i in filtered_messages_generator]
-
+        filtered_messages = [i.get('') for i in filtered_messages_generator]
         logging.info(f'Ran a digest query for dates starting {query_begin} and {query_end}.')
-        return
+        return filtered_messages

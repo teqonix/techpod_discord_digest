@@ -3,7 +3,7 @@ discord_token = secret_store.app_secrets.discord_token
 log_level = 'INFO'
 
 # Bot settings not controlled via conversation (yet):
-default_query_days = 9
+default_query_days = 14
 
 # Discord Server config:
 bot_admin_channel = "bot_log_channel"

@@ -4,6 +4,7 @@ import json
 import logging
 import firestore_client
 from datetime import datetime
+import asyncio
 
 import config
 import conversation
@@ -14,6 +15,7 @@ import conversation
 # - Add emojii monitoring logic (add/remove)
 # - Add query capability & output message + formatting
 # - Add versioning to all data schemas - if this changes over time it would be good to keep for conversion purposes
+# - Refactor code to use classes instead of dictionaries everywhere for object properties
 
 DB_CLIENT = firestore_client.DigestBotFirestoreClient(gcp_credentials_env_var='GOOGLE_APPLICATION_CREDENTIALS')
 BOT_ADMIN = bot_actions.TechPodBotClient(DB_CLIENT)
@@ -110,6 +112,17 @@ async def on_message(message):
                 ACTIVE_CONVERSATIONS[message.author] = conversation.Conversation(owner=message.author, command='$remove_reactions', db_client=DB_CLIENT, bot_admin=BOT_ADMIN)
                 await message.channel.send(f'Hey {message.author.display_name}. What reactions would you like to stop tracking? Pick from these: { [i["discord_output_str"] for i in DB_CLIENT.monitored_emoji["emoji_list"]] }')
                 logging.info(f'Started a conversation for command for removing reactions: {ACTIVE_CONVERSATIONS[message.author]}')
+        
+        if message.content.startswith('$query'):
+            if message.author in ACTIVE_CONVERSATIONS:
+                pass
+            else:
+                ACTIVE_CONVERSATIONS[message.author] = conversation.Conversation(owner=message.author, command='$query', db_client=DB_CLIENT, bot_admin=BOT_ADMIN)
+                await message.channel.send(f'Hol up, {message.author.display_name} - I`m fetching reactions to posts within the past {config.default_query_days} days for your community digest report..')
+                async with message.channel.typing():
+                    await asyncio.sleep(1)
+                    await BOT_ADMIN.run_digest_query(message=message)
+                ACTIVE_CONVERSATIONS[message.author].conversation_stage = 'complete'
 
     if message.content.startswith('!test'):
         logging.info('debugging!')
