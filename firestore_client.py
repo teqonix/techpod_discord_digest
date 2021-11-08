@@ -1,7 +1,10 @@
+from discord.file import File
 from google.cloud import firestore
 from discord import message
 from discord import emoji
 from discord import PartialEmoji
+from datetime import datetime
+from datetime import timedelta
 import os
 import logging
 import config
@@ -26,7 +29,7 @@ class DigestBotFirestoreClient():
             return doc_data
         else:
             logging.error(f'Could not find firestore doc `{firestore_doc_name}` in collection {collection_ref.id}')
-            raise Exception
+            raise FileNotFoundError # I'm using this Base Exception class because I'm too lazy to define custom ones right now
 
     def _validate_reaction_schema(self,reaction_to_validate):
         try:
@@ -40,16 +43,35 @@ class DigestBotFirestoreClient():
         return
 
     def _refresh_configured_channels(self):
-        self.monitored_channels = self._get_doc_data(
-            collection_ref=self.admin_collection,
-            firestore_doc_name=config.monitored_channels_doc_name
-        )        
+        try:
+            self.monitored_channels = self._get_doc_data(
+                collection_ref=self.admin_collection,
+                firestore_doc_name=config.monitored_channels_doc_name
+            )        
+        except FileNotFoundError:
+            logging.warning(f'It looks like the document that tracks which channels the bot monitors is missing!  Creating an empty one..' )
+            self.admin_collection.document(config.monitored_channels_doc_name).set({'channels': []})
+            self.monitored_channels = self._get_doc_data(
+                collection_ref=self.admin_collection,
+                firestore_doc_name=config.monitored_channels_doc_name
+            )
+            pass
 
     def _refresh_configured_emoji(self):
-        self.monitored_emoji = self._get_doc_data(
-            collection_ref=self.admin_collection,
-            firestore_doc_name=config.monitored_emoji_doc_name
-        )
+        try:
+            self.monitored_emoji = self._get_doc_data(
+                collection_ref=self.admin_collection,
+                firestore_doc_name=config.monitored_emoji_doc_name
+            )
+        except FileNotFoundError:
+            logging.warning(f'It looks like the document that tracks which emoji the bot monitors is missing!  Creating an empty one..' )
+            self.admin_collection.document(config.monitored_emoji_doc_name).set({'emoji_list': []})
+            self.monitored_emoji = self._get_doc_data(
+                collection_ref=self.admin_collection,
+                firestore_doc_name=config.monitored_emoji_doc_name
+            )
+            pass
+            
 
     # The discord library returns a custom Class if a custom emoji is used.  If not, it just returns a string.
     def _handle_custom_emoji(self, emoji_to_parse):
@@ -85,6 +107,7 @@ class DigestBotFirestoreClient():
         self.db = firestore.Client(project=config.gcp_project_id)
         self.admin_collection = self.db.collection(config.firestore_admin_collection)
         self.storage_collection = self.db.collection(config.firestore_storage_collection)
+        self.message_collection = self.db.collection(f'{config.firestore_storage_collection}/{config.message_store_doc_name}/{config.message_store_reaction_collection_name}')
 
         try:
             self._refresh_configured_emoji()
@@ -153,7 +176,8 @@ class DigestBotFirestoreClient():
             message_data = {
                 'clean_content': fetched_message.clean_content,
                 'content': fetched_message.content,
-                'created_at': fetched_message.created_at.isoformat(),
+                'created_at_str': fetched_message.created_at.isoformat(),
+                'created_at_datetime': fetched_message.created_at,
                 'message_id': str(fetched_message.id),
                 'channel_id': str(fetched_message.channel.id),
                 'channel_name': fetched_message.channel.name,
@@ -167,5 +191,12 @@ class DigestBotFirestoreClient():
                     'name': fetched_message.author.name
                 }
             }
-            message_collection = self.db.collection(f'{config.firestore_storage_collection}/{config.message_store_doc_name}/{config.message_store_reaction_collection_name}')
-            message_collection.document(db_document_id).set(message_data, merge=True)
+            self.message_collection.document(db_document_id).set(message_data, merge=True)
+        
+    def get_reacted_messages_for_timespan(self, query_begin=(datetime.today() - timedelta(days=config.default_query_days)), query_end=datetime.today()):
+        filtered_messages_query = self.message_collection.where(config.message_created_at_field, u'>=', query_begin).where(config.message_created_at_field, u'<=', query_end)
+        filtered_messages_generator = filtered_messages_query.stream()
+        filtered_messages = [i for i in filtered_messages_generator]
+
+        logging.info(f'Ran a digest query for dates starting {query_begin} and {query_end}.')
+        return

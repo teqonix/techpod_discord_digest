@@ -113,7 +113,7 @@ async def on_message(message):
 
     if message.content.startswith('!test'):
         logging.info('debugging!')
-        logging.info('no really I would like to debug')
+        DB_CLIENT.get_reacted_messages_for_timespan()
 
 @DISCORD_CLIENT.event
 async def on_raw_reaction_add(payload):
