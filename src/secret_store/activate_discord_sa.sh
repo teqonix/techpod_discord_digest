@@ -1,0 +1,2 @@
+ln -sf /Users/teqonix/nerd_projects/techpod_discord_digest/secret_store/techpod-discord-digest-0d66139b52b6.json /Users/teqonix/GOOGLE_DEFAULT_CREDENTIALS
+gcloud auth activate-service-account --key-file=/Users/teqonix/GOOGLE_DEFAULT_CREDENTIALS

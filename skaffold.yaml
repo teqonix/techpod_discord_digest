@@ -7,8 +7,13 @@ build:
     sha256: {}
   # defines where to find the code at build time and where to push the resulting image
   artifacts:
-  - context: .
+  - context: src
     image: us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot
+    buildArgs:
+      application_credentials: /usr/local/digest_bot/secret_store/techpod-discord-digest-0d66139b52b6.json
+    custom:
+      buildCommand: docker/docker_buildx_build.sh
+
 # defines the Kubernetes manifests to deploy on each run
 deploy:
   kubectl:

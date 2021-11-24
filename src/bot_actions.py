@@ -258,7 +258,6 @@ class TechPodBotClient():
                 except KeyError:
                     messages_by_category[(category['category'])] = list()
                     messages_by_category[(category['category'])].append(msg)
-        del msg
 
         for category in messages_by_category:
             category_emoji = [i for i in msg_categories if i['category'] == category]
@@ -271,6 +270,5 @@ class TechPodBotClient():
                 category_text = category_text[0:1900]
                 category_text = category_text + '\n\n **Sorry, this message was too big for Discord! Category report truncated.**'
             await message.channel.send(category_text)
-            del msg
             del category_text
         return
