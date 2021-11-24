@@ -1,0 +1,9 @@
+requests
+google-cloud-api-gateway
+google-cloud-appengine-admin
+google-cloud-storage
+google-cloud-datastore
+google-cloud-firestore
+google-cloud-secret-manager
+py-cord
+emoji

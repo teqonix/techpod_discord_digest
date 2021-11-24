@@ -1,0 +1,27 @@
+# This Deployment manifest defines:
+# - single-replica deployment of the container image, with label "app: techpod-discord-digest"
+# - Pod exposes port 8080
+# - specify PORT environment variable to the container process
+# Syntax reference https://kubernetes.io/docs/concepts/configuration/overview/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: techpod-discord-digest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: techpod-discord-digest
+  template:
+    metadata:
+      labels:
+        app: techpod-discord-digest
+    spec:
+      containers:
+      - name: bot-client
+        image: us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
