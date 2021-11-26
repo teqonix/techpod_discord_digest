@@ -47,7 +47,7 @@ async def on_message(message):
         convo = ACTIVE_CONVERSATIONS[message.author]
         convo.conversation_message_list.append(message)
         # If the user has requested to cancel their operation, delete the conversation:
-        if message.content.startswith('$cancel'):
+        if message.content.startswith('$cancel') or message.content.startswith('$clear'):
             if convo.conversation_stage == 'add_categories':
                 await message.channel.send(f'You are in the middle of adding a reaction so we cannot cancel right now!')
                 return

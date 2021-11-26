@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: bot-client
-        image: us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot:latest
+        image: us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot
         ports:
         - containerPort: 8080
         env:
