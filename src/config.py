@@ -1,5 +1,6 @@
-import secret_store.app_secrets
-discord_token = secret_store.app_secrets.discord_token
+from google.cloud import secretmanager
+
+secrets_client = secretmanager.SecretManagerServiceClient()
 log_level = 'INFO'
 
 # Bot settings not controlled via conversation (yet):
@@ -31,3 +32,7 @@ message_store_doc_name = 'messages'
 message_store_reaction_collection_name = 'reacted_to'
 
 message_created_at_field = u'created_at_datetime'
+
+# GCP Secrets:
+discord_bot_token_secret = 'techpod-discord-digest-bot-token'
+discord_token = secrets_client.access_secret_version(name=f'projects/{gcp_project_id}/secrets/{discord_bot_token_secret}/versions/latest')

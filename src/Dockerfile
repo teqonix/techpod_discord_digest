@@ -13,6 +13,6 @@ COPY ./ /digest_bot
 # TODO: Update container to pull secrets from GCP Secret Store - this is terrible
 COPY ./secret_store/* /digest_bot/secret_store/
 
-ENV GOOGLE_APPLICATION_CREDENTIALS=$application_credentials
+ENV GOOGLE_APPLICATION_CREDENTIALS=/data/techpod_runner_sa_secret.json
 
-CMD python3 /digest_bot/main.py
+CMD /digest_bot/start.sh
