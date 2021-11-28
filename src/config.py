@@ -35,4 +35,4 @@ message_created_at_field = u'created_at_datetime'
 
 # GCP Secrets:
 discord_bot_token_secret = 'techpod-discord-digest-bot-token'
-discord_token = secrets_client.access_secret_version(name=f'projects/{gcp_project_id}/secrets/{discord_bot_token_secret}/versions/latest')
+discord_token = secrets_client.access_secret_version(name=f'projects/{gcp_project_id}/secrets/{discord_bot_token_secret}/versions/latest').payload.data.decode("utf-8")
