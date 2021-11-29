@@ -25,13 +25,13 @@ spec:
         command: ["/bin/bash"]
         # args: ["-c", "gcloud auth list; sleep 120"] # DEBUG ONLY
         # args: ["-c", "gcloud secrets versions access latest --secret=\"techpod-discord-digest-dev-app-runner-key\") >> /data/techpod_runner_sa_secret.json; tail -n 500 /data/techpod_runner_sa_secret.json; sleep 120"] # DEBUG ONLY - ROTATE KEYS AFTER USING AS PK WILL BE STORED IN LOGS
-        args: ["-c", "gcloud secrets versions access latest --secret=\"techpod-discord-digest-dev-app-runner-key\" > /data/techpod_runner_sa_secret.json"]
+        args: ["-c", "gcloud secrets versions access latest --secret=\"techpod-discord-digest-dev-app-runner-key\" --project techpod-discord-digest > /data/techpod_runner_sa_secret.json"]
         volumeMounts:
         - name: config-data
           mountPath: /data
       containers:
       - name: bot-client
-        image: us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot
+        image: us-central1-docker.pkg.dev/techpod-discord-digest/techpod-discord-digest-dev-artifact-registry-01/techpod_digest_bot
         resources:
           requests:
             memory: "128Mi"

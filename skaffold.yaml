@@ -8,7 +8,7 @@ build:
   # defines where to find the code at build time and where to push the resulting image
   artifacts:
   - context: src
-    image: us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot
+    image: us-central1-docker.pkg.dev/techpod-discord-digest/techpod-discord-digest-dev-artifact-registry-01/techpod_digest_bot
     custom:
       buildCommand: docker/docker_buildx_build.sh
 

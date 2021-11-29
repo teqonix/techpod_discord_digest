@@ -278,14 +278,9 @@ class TechPodBotClient():
             category_emoji = [i for i in msg_categories_dedup if i['category'] == category]
             category_text = f'\n\n **--{category_emoji[0]["discord_output_str"]}-- {category} --{category_emoji[0]["discord_output_str"]}--** \n'
             await message.channel.send(category_text)
-            message_text = ''
             for msg in messages_by_category[category]:
+                message_text = ''
                 message_text = f'*At {msg["created_at_str"].split(".")[0]} UTC, {msg["author"]["display_name"]} wrote:*```{msg["clean_content"]}``` Context: {msg["message_url"]} \n\n'
-            if len(category_text) >= 1900:
-                logging.warning(f'Query response message was truncated before being sent to Discord. Full message: {category_text}')
-                message_text = message_text[0:1900]
-                message_text = message_text + '\n\n **Sorry, this message was too big for Discord! Category report truncated.**'
-            await message.channel.send(message_text)
+                await message.channel.send(message_text)
             await message.channel.send(category_text)
-            del category_text
         return

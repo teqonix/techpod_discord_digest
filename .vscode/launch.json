@@ -6,13 +6,12 @@
             "request": "launch",
             "skaffoldConfig": "${workspaceFolder}/skaffold.yaml",
             "watch": true,
-            "cleanUp": false,
+            "cleanUp": true,
             "portForward": true,
-            "internalConsoleOptions": "neverOpen",
-            "imageRegistry": "us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01",
+            "imageRegistry": "us-central1-docker.pkg.dev/techpod-discord-digest/techpod-discord-digest-dev-artifact-registry-01",
             "debug": [
                 {
-                    "image": "us-central1-docker.pkg.dev/techpod-discord-digest/gcp-console-artifact-repo-01/techpod_digest_bot",
+                    "image": "us-central1-docker.pkg.dev/techpod-discord-digest/techpod-discord-digest-dev-artifact-registry-01/techpod_digest_bot",
                     "containerName": "bot-client",
                     "sourceFileMap": {
                         "${workspaceFolder}/src": "/digest_bot"
