@@ -36,9 +36,11 @@ spec:
           requests:
             memory: "128Mi"
             cpu: "150m"
+            ephemeral-storage: "256M"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "128Mi"
+            cpu: "150m"
+            ephemeral-storage: "256M"
         volumeMounts:
         - name: config-data
           mountPath: /data
